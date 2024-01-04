@@ -1,18 +1,13 @@
-import json
 import streamlit as st
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
 
 def main():
-    # JSONファイルからAPIキーを読み込む
-    with open('/Users/kii/work/python_study/chat_gpt/ai_chat/config.json') as config_file:
-        config = json.load(config_file)
-        
     # ページ設定
     init_page()
 
     # モデルの選択
-    llm = selet_model(config)
+    llm = selet_model()
     
     # メッセージの初期化
     init_messages()
@@ -56,7 +51,7 @@ def init_messages():
     st.session_state.cost = []
         
         
-def selet_model(config):
+def selet_model():
     # サイドバーにモデル選択のラジオボタンを追加
     model = st.sidebar.radio("Choose a model", ["GPT-3.5", "GPT-4"])
     if model == "GPT-3.5":
