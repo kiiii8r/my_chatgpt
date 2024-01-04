@@ -7,7 +7,7 @@ def main():
     init_page()
 
     # モデルの選択
-    llm = selet_model(config)
+    llm = selet_model()
     
     # メッセージの初期化
     init_messages()
@@ -51,7 +51,7 @@ def init_messages():
     st.session_state.cost = []
         
         
-def selet_model(config):
+def selet_model():
     # サイドバーにモデル選択のラジオボタンを追加
     model = st.sidebar.radio("Choose a model", ["GPT-3.5", "GPT-4"])
     if model == "GPT-3.5":
