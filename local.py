@@ -1,7 +1,10 @@
 import json
 import streamlit as st
+from streamlit_chat import message
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
+import plugin_list as pl
+
 
 def main():
     # JSONファイルからAPIキーを読み込む
@@ -12,31 +15,34 @@ def main():
     init_page()
 
     # モデルの選択
-    llm = selet_model(config)
-    
-    # メッセージの初期化
-    init_messages()
+    llm = select_model(config)
 
-    # ユーザーの入力を監視
-    if user_input := st.chat_input("聞きたいことを入力してね！"):
-        st.session_state.messages.append(HumanMessage(content=user_input))
-        with st.spinner("ChatGPT が考えています ..."):
-            response = llm(st.session_state.messages)
-        st.session_state.messages.append(AIMessage(content=response.content))
+    # プラグインの選択
+    plugin = select_plugin(llm)
 
+    if plugin == "なし":
+        # メッセージの初期化
+        init_messages()
     
-    # チャット履歴の表示
-    messages = st.session_state.get('messages', [])
-    for message in messages:
-        if isinstance(message, AIMessage):
-            with st.chat_message('assistant'):
-                st.markdown(message.content)
-        elif isinstance(message, HumanMessage):
-            with st.chat_message('user'):
-                st.markdown(message.content)
-        else:  # isinstance(message, SystemMessage):
-            st.write(f"System message: {message.content}")
-        
+        # ユーザーの入力を監視
+        if user_input := st.chat_input("聞きたいことを入力してね！"):
+            st.session_state.messages.append(HumanMessage(content=user_input))
+            with st.spinner("ChatGPT が考えています ..."):
+                response = llm(st.session_state.messages)
+            st.session_state.messages.append(AIMessage(content=response.content))
+
+        # チャット履歴の表示
+        messages = st.session_state.get('messages', [])
+        for message in messages:
+            if isinstance(message, AIMessage):
+                with st.chat_message('assistant'):
+                    st.markdown(message.content)
+            elif isinstance(message, HumanMessage):
+                with st.chat_message('user'):
+                    st.markdown(message.content)
+            else:  # isinstance(message, SystemMessage):
+                st.write(f"System message: {message.content}")
+            
         
 def init_page():
     st.set_page_config(
@@ -53,12 +59,11 @@ def init_messages():
         st.session_state.messages = [
             SystemMessage(content="何かお役に立てることはありますか？")
         ]
-    st.session_state.cost = []
         
         
-def selet_model(config):
+def select_model(config):
     # サイドバーにモデル選択のラジオボタンを追加
-    model = st.sidebar.radio("Choose a model", ["GPT-3.5", "GPT-4"])
+    model = st.sidebar.radio("モデルを選択", ["GPT-3.5", "GPT-4"])
     if model == "GPT-3.5":
         model_name = "gpt-3.5-turbo-0613"
     else:
@@ -66,13 +71,36 @@ def selet_model(config):
         
     # サイドバーにスライダーを追加、temperatureの値を選択可能にする
     # 初期値は0.0、最小値は0.0、最大値は2.0、ステップは0.1
-    temperature = st.sidebar.slider("Temperature", 0.0, 2.0, 0.0, 0.1)
+    temperature = st.sidebar.slider("サンプリング温度", 0.0, 2.0, 0.0, 0.1)
     
     st.sidebar.markdown("## Costs")
     st.sidebar.markdown("**Total cost**")
     # st.sidebar.markdown(cb.total_cost)
 
-    return ChatOpenAI(api_key=config['OPENAI_API_KEY'], temperature=temperature, model_name=model_name)        
+    return ChatOpenAI(api_key=config['OPENAI_API_KEY'], temperature=temperature, model_name=model_name)       
+
+
+def select_plugin(llm):
+    # サイドバーにプラグイン選択のセレクトボックスを追加
+    previous_plugin = st.session_state.get('plugin', None)
+    plugin = st.sidebar.selectbox("プラグイン", ["なし", "WEBサイト要約", "Youtube動画要約", "PDF質問"], key='plugin')
+    
+    # 選択されたプラグインが変更された場合、セッションをクリア
+    if previous_plugin is not None and previous_plugin != plugin:
+        st.session_state.clear()
+        st.session_state['plugin'] = plugin
+    
+    if plugin == "WEBサイト要約":
+        pl.web_summarize(llm)
+    elif plugin == "Youtube動画要約":
+        pl.youtube_summarize(llm)
+    elif plugin == "PDF質問":
+        pl.pdf_question(llm)
+    
+        
+    return plugin
+    
+    
 
 if __name__ == '__main__':
     main()
