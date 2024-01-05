@@ -1,7 +1,10 @@
 import json
 import streamlit as st
+from streamlit_chat import message
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
+import plugin_list as pl
+
 
 def main():
     # JSONファイルからAPIキーを読み込む
@@ -12,11 +15,11 @@ def main():
     init_page()
 
     # モデルの選択
-    llm = select_model()
-    
+    llm = select_model(config)
+
     # プラグインの選択
-    plugin = select_contents(llm)
-    
+    plugin = select_plugin(llm)
+
     if plugin == "なし":
         # メッセージの初期化
         init_messages()
@@ -28,7 +31,6 @@ def main():
                 response = llm(st.session_state.messages)
             st.session_state.messages.append(AIMessage(content=response.content))
 
-        
         # チャット履歴の表示
         messages = st.session_state.get('messages', [])
         for message in messages:
@@ -57,10 +59,9 @@ def init_messages():
         st.session_state.messages = [
             SystemMessage(content="何かお役に立てることはありますか？")
         ]
-    st.session_state.cost = []
         
         
-def select_model():
+def select_model(config):
     # サイドバーにモデル選択のラジオボタンを追加
     model = st.sidebar.radio("モデルを選択", ["GPT-3.5", "GPT-4"])
     if model == "GPT-3.5":
@@ -76,18 +77,27 @@ def select_model():
     st.sidebar.markdown("**Total cost**")
     # st.sidebar.markdown(cb.total_cost)
 
-    return ChatOpenAI(api_key=config['OPENAI_API_KEY'], temperature=temperature, model_name=model_name)        
+    return ChatOpenAI(api_key=config['OPENAI_API_KEY'], temperature=temperature, model_name=model_name)       
 
 
-def select_contents(llm):
-    # サイドバーにモデル選択のラジオボタンを追加
-    plugin = st.sidebar.selectbox("プラグイン", ["なし", "WEBサイト要約", "Youtube動画要約", "PDF質問"])
+def select_plugin(llm):
+    # サイドバーにプラグイン選択のセレクトボックスを追加
+    previous_plugin = st.session_state.get('plugin', None)
+    plugin = st.sidebar.selectbox("プラグイン", ["なし", "WEBサイト要約", "Youtube動画要約", "PDF質問"], key='plugin')
+    
+    # 選択されたプラグインが変更された場合、セッションをクリア
+    if previous_plugin is not None and previous_plugin != plugin:
+        st.session_state.clear()
+        st.session_state['plugin'] = plugin
+    
     if plugin == "WEBサイト要約":
-        plugin.web_summarize(llm)
+        pl.web_summarize(llm)
     elif plugin == "Youtube動画要約":
-        plugin.youtube_summarize(llm)
+        pl.youtube_summarize(llm)
     elif plugin == "PDF質問":
-        plugin.pdf_question(llm)
+        pl.pdf_question(llm)
+    
+        
     return plugin
     
     
