@@ -79,12 +79,12 @@ def main_view():
             
 
 def init_page():
-            st.set_page_config(
-                page_title="My ChatGPT",
-                page_icon="⚙️"
-            )
-            st.header("My ChatGPT")
-            st.sidebar.title("ChatGPT")
+    st.set_page_config(
+        page_title="My ChatGPT",
+        page_icon="⚙️"
+    )
+    st.header("My ChatGPT")
+    st.sidebar.title("ChatGPT")
                 
         
 def init_messages():
