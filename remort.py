@@ -11,24 +11,22 @@ import plugin_list as pl
 def run():
     init_page()
     
-    # 認証
-    authenticator = stauth.Authenticate(
-        credentials={
+    # 認証情報
+    credentials={
             'usernames': {
                 st.secrets["LOGIN_INFO"]["USER_NAME"] : {
                     'email': st.secrets["LOGIN_INFO"]["EMAIL"],
                     'name': st.secrets["LOGIN_INFO"]["USER_NAME"] ,
                     'password': st.secrets["LOGIN_INFO"]["PASSWORD"] 
                 }
-            },
-            'cookie': {
-                'expiry_days': 90,
-                'key': 'some_signature_key',
-                'name': 'some_cookie_name'
             }
         }
-    )
+    cookie_key = 'some_signature_key'
+    cookie_name = 'some_cookie_name'
+    expiry_days = 90
     
+    # Basic認証
+    authenticator = stauth.Authenticate(credentials, cookie_name, cookie_key, expiry_days)
     authenticator.login("ログイン", "main")
     
     # 判定
