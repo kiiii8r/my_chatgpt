@@ -15,10 +15,10 @@ def run():
     authenticator = stauth.Authenticate(
         credentials={
             'usernames': {
-                USER_NAME : {
-                    'email': EMAIL,
-                    'name': USER_NAME,
-                    'password': PASSWORD
+                st.secrets["LOGIN_INFO"]["USER_NAME"] : {
+                    'email': st.secrets["LOGIN_INFO"]["EMAIL"],
+                    'name': st.secrets["LOGIN_INFO"]["USER_NAME"] ,
+                    'password': st.secrets["LOGIN_INFO"]["PASSWORD"] 
                 }
             },
             'cookie': {
