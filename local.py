@@ -1,18 +1,52 @@
 import json
 import streamlit as st
+from streamlit_authenticator import Authenticate
 from streamlit_chat import message
+import streamlit_authenticator as stauth
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
 import plugin_list as pl
+import yaml
+from yaml.loader import SafeLoader
 
 
-def main():
+
+def run():
+    init_page()
+    
+    # ユーザーの資格情報取得
+    config = []
+    with open('config.yml') as file:
+        config = yaml.load(file, Loader = SafeLoader)
+    
+    # 認証
+    authenticator = stauth.Authenticate(
+        config['credentials'],
+        config['cookie']['name'],
+        config['cookie']['key'],
+        config['cookie']['expiry_days'],
+    )
+    
+    authenticator.login("ログイン", "main")
+    
+    # 判定
+    if st.session_state["authentication_status"]:
+        # メイン画面
+        main_view()
+        
+        authenticator.logout('ログアウト', 'sidebar')
+        
+    elif st.session_state["authentication_status"] is False:
+        st.error('ユーザ名 or パスワードが間違っています')
+        
+    elif st.session_state["authentication_status"] is None:
+        st.warning('ユーザ名とパスワードを入力してください')
+
+
+def main_view():
     # JSONファイルからAPIキーを読み込む
     with open('/Users/kii/work/python_study/chat_gpt/ai_chat/config.json') as config_file:
         config = json.load(config_file)
-        
-    # ページ設定
-    init_page()
 
     # モデルの選択
     llm = select_model(config)
@@ -31,19 +65,19 @@ def main():
                 response = llm(st.session_state.messages)
             st.session_state.messages.append(AIMessage(content=response.content))
 
-        # チャット履歴の表示
-        messages = st.session_state.get('messages', [])
-        for message in messages:
-            if isinstance(message, AIMessage):
-                with st.chat_message('assistant'):
-                    st.markdown(message.content)
-            elif isinstance(message, HumanMessage):
-                with st.chat_message('user'):
-                    st.markdown(message.content)
-            else:  # isinstance(message, SystemMessage):
-                st.write(f"System message: {message.content}")
+    # チャット履歴の表示
+    messages = st.session_state.get('messages', [])
+    for message in messages:
+        if isinstance(message, AIMessage):
+            with st.chat_message('assistant'):
+                st.markdown(message.content)
+        elif isinstance(message, HumanMessage):
+            with st.chat_message('user'):
+                st.markdown(message.content)
+        else:  # isinstance(message, SystemMessage):
+            st.write(f"System message: {message.content}")
             
-        
+
 def init_page():
     st.set_page_config(
         page_title="My ChatGPT",
@@ -51,7 +85,7 @@ def init_page():
     )
     st.header("My ChatGPT")
     st.sidebar.title("ChatGPT")
-        
+                
         
 def init_messages():
     clear_button = st.sidebar.button("Clear chat history", key="clear")
@@ -59,6 +93,7 @@ def init_messages():
         st.session_state.messages = [
             SystemMessage(content="何かお役に立てることはありますか？")
         ]
+        st.session_state.costs = []
         
         
 def select_model(config):
@@ -97,10 +132,8 @@ def select_plugin(llm):
     elif plugin == "PDF質問":
         pl.pdf_question(llm)
     
-        
     return plugin
     
     
-
 if __name__ == '__main__':
-    main()
+    run()
